@@ -1,29 +1,25 @@
-// Jenkinsfile – FitFusion CI/CD Pipeline (Windows Jenkins Compatible)
-
 pipeline {
 agent any
 
 ```
 environment {
-    DB_HOST        = 'mysql'
-    IMAGE_BACKEND  = 'fitfusion-backend'
+    DB_HOST = 'mysql'
+    IMAGE_BACKEND = 'fitfusion-backend'
     IMAGE_FRONTEND = 'fitfusion-frontend'
 }
 
 stages {
 
-    // ── Checkout ─────────────────────────────────────────────
     stage('Checkout') {
         steps {
-            echo '📥 Checking out source code...'
+            echo 'Checking out source code...'
             checkout scm
         }
     }
 
-    // ── Backend: Lint ────────────────────────────────────────
     stage('Backend Lint') {
         steps {
-            echo '🔍 Running flake8 lint on backend...'
+            echo 'Running flake8 lint on backend...'
 
             bat '''
                 cd backend
@@ -33,10 +29,9 @@ stages {
         }
     }
 
-    // ── Backend: Install & Test ───────────────────────────────
     stage('Backend Test') {
         steps {
-            echo '🧪 Running backend unit tests...'
+            echo 'Running backend tests...'
 
             bat '''
                 cd backend
@@ -47,10 +42,9 @@ stages {
         }
     }
 
-    // ── Frontend: Install & Build ─────────────────────────────
     stage('Frontend Build') {
         steps {
-            echo '⚛️ Building React frontend...'
+            echo 'Building React frontend...'
 
             bat '''
                 cd frontend
@@ -60,10 +54,9 @@ stages {
         }
     }
 
-    // ── Docker: Build Images ──────────────────────────────────
     stage('Docker Build') {
         steps {
-            echo '🐳 Building Docker images...'
+            echo 'Building Docker images...'
 
             bat '''
                 docker build -t %IMAGE_BACKEND%:latest -f docker/Dockerfile .
@@ -72,17 +65,15 @@ stages {
         }
     }
 
-    // ── Docker Push Disabled ─────────────────────────────────
     stage('Docker Push') {
         steps {
-            echo '⏭️ Skipping Docker Push for local Jenkins setup...'
+            echo 'Skipping Docker Push for local Jenkins setup...'
         }
     }
 
-    // ── Deploy Disabled ──────────────────────────────────────
     stage('Deploy') {
         steps {
-            echo '⏭️ Deployment skipped for local setup.'
+            echo 'Deployment skipped for local setup.'
         }
     }
 }
@@ -90,13 +81,14 @@ stages {
 post {
 
     success {
-        echo '✅ Pipeline completed successfully!'
+        echo 'Pipeline completed successfully!'
     }
 
     failure {
-        echo '❌ Pipeline failed. Check the logs above.'
+        echo 'Pipeline failed. Check the logs above.'
     }
 }
 ```
 
 }
+
