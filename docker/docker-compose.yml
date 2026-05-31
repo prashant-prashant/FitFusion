@@ -1,0 +1,78 @@
+# ─────────────────────────────────────────────────────────────────
+# FitFusion – Docker Compose (Docker Compose v2 – no version key)
+# ─────────────────────────────────────────────────────────────────
+# Ports used:
+#   MySQL    → 3307:3306  (avoids conflict with local MySQL on 3306)
+#   Backend  → 5000:5000
+#   Frontend → 3000:80
+# -----------------------------------------------------------------
+
+services:
+  # ── MySQL Database ───────────────────────────────────────────
+  mysql:
+    image: mysql:8.0
+    container_name: fitfusion-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: fitfusion123
+      MYSQL_DATABASE: fitfusion
+    ports:
+      - "3307:3306"       # host:container  — 3307 avoids local MySQL conflict
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ../database/fitfusion.sql:/docker-entrypoint-initdb.d/fitfusion.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-pfitfusion123"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - fitfusion-network
+
+  # ── Flask Backend ────────────────────────────────────────────
+  backend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: fitfusion-backend
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      FLASK_ENV: production
+      FLASK_DEBUG: "false"
+      SECRET_KEY: supersecretflaskkey
+      JWT_SECRET_KEY: supersecretjwtkey
+      DB_HOST: mysql          # container name — internal Docker DNS
+      DB_PORT: 3306           # internal port (not 3307, that's only host-side)
+      DB_NAME: fitfusion
+      DB_USER: root
+      DB_PASSWORD: fitfusion123
+      FRONTEND_URL: "http://localhost:3000"
+    ports:
+      - "5000:5000"
+    networks:
+      - fitfusion-network
+
+  # ── React Frontend (Nginx) ────────────────────────────────────
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile.frontend
+    container_name: fitfusion-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - fitfusion-network
+
+volumes:
+  mysql-data:
+
+networks:
+  fitfusion-network:
+    driver: bridge
